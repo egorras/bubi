@@ -71,7 +71,7 @@
 
             // Add bubbles to the map
             places.forEach(place => {
-                var marker = createPlaceMarker(place, place.rental_count);
+                var marker = createPlaceMarker(place, place.start_count, place.end_count);
                 marker.addTo(allPlacesLayer);
             });
 
@@ -83,9 +83,9 @@
                 return [minutes, seconds].map(val => String(val).padStart(2, '0')).join(':');
             }
 
-            function createPlaceMarker(place, rental_count) {
+            function createPlaceMarker(place, start_count, end_count) {
                 var radius = 20;
-                var color = getColor(rental_count);
+                var color = getColor(start_count + end_count);
 
                 // Create a div icon with rental number
                 var icon = L.divIcon({
@@ -98,7 +98,7 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                    ">${rental_count}</div>`
+                    ">${start_count} | ${end_count}</div>`
                 });
 
                 var marker = L.marker([place.latitude, place.longitude], { icon: icon });
@@ -184,7 +184,9 @@
                         var otherPlace = startPlace.id == placeId
                             ? endPlace : startPlace;
                         if (otherPlace.id != placeId) {
-                            var otherPlaceMarker = createPlaceMarker(otherPlace, rentalsForPopup.length);
+                            var otherPlaceMarker = createPlaceMarker(otherPlace,
+                                rentals.filter(r => r.start_place_id == otherPlace.id && r.end_place_id == placeid).length,
+                                rentals.filter(r => r.end_place_id == otherPlace.id && r.start_place_id == placeId).length);
                             otherPlaceMarker.addTo(filteredPlacesLayer);
                         }
 
