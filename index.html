@@ -54,6 +54,7 @@
         }
 
         // Variable to hold the polyline layers
+        var allPlacesLayer = L.layerGroup();
         var filteredRentalLinesLayerGroup = L.layerGroup();
         var currentHighlightedPlaceId = null;
 
@@ -91,8 +92,11 @@
                 marker.on('click', function () {
                     showRentalLinesForPlace(place.id);
                 });
-                marker.addTo(map);
+                marker.addTo(allPlacesLayer);
+                //marker.addTo(map);
             });
+
+            map.addLayer(allPlacesLayer);
 
             function formatDuration(duration) {
                 var minutes = Math.floor((duration % 3600) / 60);
@@ -104,10 +108,14 @@
             function showRentalLinesForPlace(placeId) {
                 // Clear previous filtered lines
                 filteredRentalLinesLayerGroup.clearLayers();
+                
                 if (currentHighlightedPlaceId == placeId) {
                     currentHighlightedPlaceId = null;
+                    map.addLayer(allPlacesLayer);
                     return;
                 }
+
+                map.removeLayer(allPlacesLayer);
 
                 // Group rentals by start and end places (ignoring direction)
                 var groupedRentals = {};
@@ -145,8 +153,8 @@
 
                         // Create HTML table for the popup
                         var popupContent = `
-                            <b>${startPlace.name}</b><br>
-                            <b>${endPlace.name}</b><br>
+                            <b>${startPlace.name}</b><br><br>
+                            <b>${endPlace.name}</b><br><br>
                             <table class="popup-table">
                                 <tr>
                                     <th>#</th>
