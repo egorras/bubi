@@ -183,8 +183,10 @@
 
                         var otherPlace = startPlace.id == placeId
                             ? endPlace : startPlace;
-                        var otherPlaceMarker = createPlaceMarker(otherPlace, rentalsForPopup.length);
-                        otherPlaceMarker.addTo(filteredPlacesLayer);
+                        if (otherPlace.id != placeId) {
+                            var otherPlaceMarker = createPlaceMarker(otherPlace, rentalsForPopup.length);
+                            otherPlaceMarker.addTo(filteredPlacesLayer);
+                        }
 
                         polyline.bindPopup(popupContent);
                         filteredRentalLinesLayerGroup.addLayer(polyline);
