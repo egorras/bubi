@@ -59,31 +59,6 @@
         var filteredRentalLinesLayerGroup = L.layerGroup();
         var currentHighlightedPlaceId = null;
 
-        function createPlaceMarker(place, rental_count) {
-            var radius = 20;
-            var color = getColor(place.rental_count);
-
-            // Create a div icon with rental number
-            var icon = L.divIcon({
-                className: 'circle-label',
-                html: `<div style="
-                    background-color: ${color};
-                    width: ${radius * 2}px;
-                    height: ${radius * 2}px;
-                    border-radius: ${radius}px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                ">${place.rental_count}</div>`
-            });
-
-            var marker = L.marker([place.latitude, place.longitude], { icon: icon });
-            marker.on('click', function () {
-                showRentalLinesForPlace(place.id);
-            });
-            return marker;
-        }
-
         // Load the data
         Promise.all([
             fetch('data/places_data.json').then(response => response.json()),
@@ -106,6 +81,31 @@
                 var minutes = Math.floor((duration % 3600) / 60);
                 var seconds = duration % 60;
                 return [minutes, seconds].map(val => String(val).padStart(2, '0')).join(':');
+            }
+
+            function createPlaceMarker(place, rental_count) {
+                var radius = 20;
+                var color = getColor(place.rental_count);
+
+                // Create a div icon with rental number
+                var icon = L.divIcon({
+                    className: 'circle-label',
+                    html: `<div style="
+                        background-color: ${color};
+                        width: ${radius * 2}px;
+                        height: ${radius * 2}px;
+                        border-radius: ${radius}px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">${place.rental_count}</div>`
+                });
+
+                var marker = L.marker([place.latitude, place.longitude], { icon: icon });
+                marker.on('click', function () {
+                    showRentalLinesForPlace(place.id);
+                });
+                return marker;
             }
 
             // Function to show rental lines for a specific place
@@ -180,6 +180,11 @@
                                 `).join('')}
                             </table>
                         `;
+
+                        var otherPlace = startPlace.id == placeId
+                            ? endPlace : startPlace;
+                        var otherPlaceMarker = createPlaceMarker(otherPlace, rentalsForPopup.length);
+                        otherPlaceMarker.addTo(filteredPlacesLayer);
 
                         polyline.bindPopup(popupContent);
                         filteredRentalLinesLayerGroup.addLayer(polyline);
