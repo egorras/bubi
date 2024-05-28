@@ -1,0 +1,21 @@
+#map { height: 100vh; }
+.circle-label {
+    color: white;
+    font-size: 12px; /* Smaller font size */
+    text-align: center;
+    vertical-align: middle;
+    line-height: 1.2; /* Adjust line height */
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: inline-block;
+    text-shadow: 0 0 2px black; /* Text shadow for better readability */
+}
+.popup-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+.popup-table th, .popup-table td {
+    border: 1px solid grey;
+    padding: 1px;
+    text-align: left;
+}
