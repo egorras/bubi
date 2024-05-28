@@ -85,7 +85,7 @@
 
             function createPlaceMarker(place, rental_count) {
                 var radius = 20;
-                var color = getColor(place.rental_count);
+                var color = getColor(rental_count);
 
                 // Create a div icon with rental number
                 var icon = L.divIcon({
@@ -98,7 +98,7 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                    ">${place.rental_count}</div>`
+                    ">${rental_count}</div>`
                 });
 
                 var marker = L.marker([place.latitude, place.longitude], { icon: icon });
