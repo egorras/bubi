@@ -19,6 +19,15 @@
             display: inline-block;
             text-shadow: 0 0 2px black; /* Text shadow for better readability */
         }
+        .popup-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .popup-table th, .popup-table td {
+            border: 1px solid grey;
+            padding: 1px;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -85,29 +94,79 @@
                 marker.addTo(map);
             });
 
+            function formatDuration(duration) {
+                var minutes = Math.floor((duration % 3600) / 60);
+                var seconds = duration % 60;
+                return [minutes, seconds].map(val => String(val).padStart(2, '0')).join(':');
+            }
+
             // Function to show rental lines for a specific place
             function showRentalLinesForPlace(placeId) {
                 // Clear previous filtered lines
                 filteredRentalLinesLayerGroup.clearLayers();
+                if (currentHighlightedPlaceId == placeId) {
+                    currentHighlightedPlaceId = null;
+                    return;
+                }
 
-                // Add filtered lines for the selected place
+                // Group rentals by start and end places (ignoring direction)
+                var groupedRentals = {};
                 rentals.forEach(rental => {
                     if (rental.start_place_id === placeId || rental.end_place_id === placeId) {
-                        var startPlace = places.find(place => place.id === rental.start_place_id);
-                        var endPlace = places.find(place => place.id === rental.end_place_id);
-                        if (startPlace && endPlace) {
-                            var weight = 2; // Fixed line thickness for filtered lines
-                            var polyline = L.polyline([
-                                [startPlace.latitude, startPlace.longitude],
-                                [endPlace.latitude, endPlace.longitude]
-                            ], {
-                                color: 'red',
-                                weight: weight,
-                                opacity: 0.7
-                            });
-                            polyline.bindPopup(`Rental from ${startPlace.name} to ${endPlace.name}`);
-                            filteredRentalLinesLayerGroup.addLayer(polyline);
+                        var key = [rental.start_place_id, rental.end_place_id].sort().join('-');
+                        if (!groupedRentals[key]) {
+                            groupedRentals[key] = [];
                         }
+                        groupedRentals[key].push(rental);
+                    }
+                });
+
+                // Add filtered lines for the selected place
+                Object.keys(groupedRentals).forEach(key => {
+                    var [startId, endId] = key.split('-');
+                    var startPlace = places.find(place => place.id == startId);
+                    var endPlace = places.find(place => place.id == endId);
+                    if (startPlace && endPlace) {
+                        var weight = 3; // Fixed line thickness for filtered lines
+                        var polyline = L.polyline([
+                            [startPlace.latitude, startPlace.longitude],
+                            [endPlace.latitude, endPlace.longitude]
+                        ], {
+                            color: 'red',
+                            weight: weight,
+                            opacity: 0.7
+                        });
+
+                        // Sort rentals by duration
+                        var rentalsForPopup = groupedRentals[key].map(rental => {
+                            rental.duration = (new Date(rental.end_time) - new Date(rental.start_time)) / 1000;
+                            return rental;
+                        }).sort((a, b) => a.duration - b.duration);
+
+                        // Create HTML table for the popup
+                        var popupContent = `
+                            <b>${startPlace.name}</b><br>
+                            <b>${endPlace.name}</b><br>
+                            <table class="popup-table">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Duration</th>
+                                    <th>Start</th>
+                                    <th>Bike</th>
+                                </tr>
+                                ${rentalsForPopup.map((rental, index) => `
+                                    <tr>
+                                        <td>${index}</td>
+                                        <td>${formatDuration(rental.duration)}</td>
+                                        <td>${rental.start_time}</td>
+                                        <td>${rental.bike}</td>
+                                    </tr>
+                                `).join('')}
+                            </table>
+                        `;
+
+                        polyline.bindPopup(popupContent);
+                        filteredRentalLinesLayerGroup.addLayer(polyline);
                     }
                 });
 
