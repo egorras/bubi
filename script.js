@@ -36,7 +36,7 @@ Promise.all([
 
     // Add bubbles to the map
     places.forEach(place => {
-        var marker = createPlaceMarker(place);
+        var marker = createPlaceMarker(place, place.start_count, place.end_count);
         marker.addTo(allPlacesLayer);
     });
 
@@ -49,11 +49,11 @@ Promise.all([
     }
 
     function createPlaceMarker(place, start_count, end_count) {
-        start_count = start_count || place.start_count;
-        end_count = end_count || place.end_count;
+        start_count = Number.parseInt(start_count);
+        end_count = Number.parseInt(end_count);
 
         var radius = 20;
-        var color = getColor(Number.parseInt(start_count) + Number.parseInt(end_count));
+        var color = getColor(start_count + end_count);
 
         // Create a div icon with rental number
         var icon = L.divIcon({
@@ -74,6 +74,17 @@ Promise.all([
             showRentalLinesForPlace(place.id);
         });
         return marker;
+    }
+
+    function addArrowhead(latlng) {
+        return L.marker(latlng, {
+            icon: L.divIcon({
+                className: 'arrowhead',
+                html: '<div style="transform: rotate(45deg);">&#x25B2;</div>',
+                iconSize: [10, 10],
+                iconAnchor: [5, 5]
+            })
+        }).addTo(filteredRentalLinesLayerGroup);
     }
 
     // Function to create curved line between two points
@@ -105,7 +116,7 @@ Promise.all([
         }
 
         var place = places.find(p => p.id == placeId);
-        var marker = createPlaceMarker(place);
+        var marker = createPlaceMarker(place, place.start_count, place.end_count);
         marker.addTo(filteredPlacesLayer);
         map.removeLayer(allPlacesLayer);
 
@@ -132,12 +143,14 @@ Promise.all([
                     L.latLng(endPlace.latitude, endPlace.longitude)
                 );
 
-                curvedLine.arrowheads({
-                    size: '5%',
-                    frequency: 'end',
-                    fill: true,
-                    yawn: 40
-                });
+                // curvedLine.arrowheads({
+                //     size: '5%',
+                //     frequency: 'end',
+                //     fill: true,
+                //     yawn: 40
+                // });
+
+                //addArrowhead(L.latLng(endPlace.latitude, endPlace.longitude));
 
                 // Sort rentals by duration
                 var rentalsForPopup = groupedRentals[key].map(rental => {
