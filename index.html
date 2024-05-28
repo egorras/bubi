@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bubi</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        #map { height: 100vh; }
+        .circle-label {
+            color: white;
+            font-size: 12px; /* Smaller font size */
+            text-align: center;
+            vertical-align: middle;
+            line-height: 1.2; /* Adjust line height */
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: inline-block;
+            text-shadow: 0 0 2px black; /* Text shadow for better readability */
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Initialize the map
+        var map = L.map('map');
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Function to get color based on rental count
+        function getColor(d) {
+            return d > 250 ? '#800026' :
+                   d > 100 ? '#BD0026' :
+                   d > 50  ? '#E31A1C' :
+                   d > 20  ? '#FC4E2A' :
+                   d > 10  ? '#FD8D3C' :
+                   d > 5   ? '#FEB24C' :
+                   d > 0   ? '#FED976' :
+                             '#FFEDA0';
+        }
+
+        // Variable to hold the polyline layers
+        var filteredRentalLinesLayerGroup = L.layerGroup();
+        var currentHighlightedPlaceId = null;
+
+        // Load the data
+        Promise.all([
+            fetch('data/places_data.json').then(response => response.json()),
+            fetch('data/rentals_data.json').then(response => response.json())
+        ]).then(([places, rentals]) => {
+
+            // Calculate the bounds
+            var bounds = L.latLngBounds(places.map(place => [place.latitude, place.longitude]));
+            console.log('Bounds:', bounds);
+
+            // Add bubbles to the map
+            places.forEach(place => {
+                var radius = 20;
+                var color = getColor(place.rental_count);
+
+                // Create a div icon with rental number
+                var icon = L.divIcon({
+                    className: 'circle-label',
+                    html: `<div style="
+                        background-color: ${color};
+                        width: ${radius * 2}px;
+                        height: ${radius * 2}px;
+                        border-radius: ${radius}px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">${place.rental_count}</div>`
+                });
+
+                var marker = L.marker([place.latitude, place.longitude], { icon: icon });
+                    //.bindPopup(`${place.name}<br>Rentals: ${place.rental_count}`);
+                marker.on('click', function () {
+                    showRentalLinesForPlace(place.id);
+                });
+                marker.addTo(map);
+            });
+
+            // Function to show rental lines for a specific place
+            function showRentalLinesForPlace(placeId) {
+                // Clear previous filtered lines
+                filteredRentalLinesLayerGroup.clearLayers();
+
+                // Add filtered lines for the selected place
+                rentals.forEach(rental => {
+                    if (rental.start_place_id === placeId || rental.end_place_id === placeId) {
+                        var startPlace = places.find(place => place.id === rental.start_place_id);
+                        var endPlace = places.find(place => place.id === rental.end_place_id);
+                        if (startPlace && endPlace) {
+                            var weight = 2; // Fixed line thickness for filtered lines
+                            var polyline = L.polyline([
+                                [startPlace.latitude, startPlace.longitude],
+                                [endPlace.latitude, endPlace.longitude]
+                            ], {
+                                color: 'red',
+                                weight: weight,
+                                opacity: 0.7
+                            });
+                            polyline.bindPopup(`Rental from ${startPlace.name} to ${endPlace.name}`);
+                            filteredRentalLinesLayerGroup.addLayer(polyline);
+                        }
+                    }
+                });
+
+                // Show filtered lines
+                filteredRentalLinesLayerGroup.addTo(map);
+                currentHighlightedPlaceId = placeId;
+            }
+
+            // Fit the map to the bounds
+            map.fitBounds(bounds);
+        }).catch(err => console.error('Error fetching data:', err));
+    </script>
+</body>
+</html>
