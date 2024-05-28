@@ -55,8 +55,34 @@
 
         // Variable to hold the polyline layers
         var allPlacesLayer = L.layerGroup();
+        var filteredPlacesLayer = L.layerGroup();
         var filteredRentalLinesLayerGroup = L.layerGroup();
         var currentHighlightedPlaceId = null;
+
+        function createPlaceMarker(place, rental_count) {
+            var radius = 20;
+            var color = getColor(place.rental_count);
+
+            // Create a div icon with rental number
+            var icon = L.divIcon({
+                className: 'circle-label',
+                html: `<div style="
+                    background-color: ${color};
+                    width: ${radius * 2}px;
+                    height: ${radius * 2}px;
+                    border-radius: ${radius}px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">${place.rental_count}</div>`
+            });
+
+            var marker = L.marker([place.latitude, place.longitude], { icon: icon });
+            marker.on('click', function () {
+                showRentalLinesForPlace(place.id);
+            });
+            return marker;
+        }
 
         // Load the data
         Promise.all([
@@ -70,30 +96,8 @@
 
             // Add bubbles to the map
             places.forEach(place => {
-                var radius = 20;
-                var color = getColor(place.rental_count);
-
-                // Create a div icon with rental number
-                var icon = L.divIcon({
-                    className: 'circle-label',
-                    html: `<div style="
-                        background-color: ${color};
-                        width: ${radius * 2}px;
-                        height: ${radius * 2}px;
-                        border-radius: ${radius}px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    ">${place.rental_count}</div>`
-                });
-
-                var marker = L.marker([place.latitude, place.longitude], { icon: icon });
-                    //.bindPopup(`${place.name}<br>Rentals: ${place.rental_count}`);
-                marker.on('click', function () {
-                    showRentalLinesForPlace(place.id);
-                });
+                var marker = createPlaceMarker(place, place.rental_count);
                 marker.addTo(allPlacesLayer);
-                //marker.addTo(map);
             });
 
             map.addLayer(allPlacesLayer);
@@ -108,6 +112,7 @@
             function showRentalLinesForPlace(placeId) {
                 // Clear previous filtered lines
                 filteredRentalLinesLayerGroup.clearLayers();
+                filteredPlacesLayer.clearLayers();
                 
                 if (currentHighlightedPlaceId == placeId) {
                     currentHighlightedPlaceId = null;
@@ -115,6 +120,9 @@
                     return;
                 }
 
+                var place = places.find(p => p.id == placeId);
+                var marker = createPlaceMarker(place, place.rental_count);
+                marker.addTo(filteredPlacesLayer);
                 map.removeLayer(allPlacesLayer);
 
                 // Group rentals by start and end places (ignoring direction)
@@ -180,6 +188,7 @@
 
                 // Show filtered lines
                 filteredRentalLinesLayerGroup.addTo(map);
+                filteredPlacesLayer.addTo(map);
                 currentHighlightedPlaceId = placeId;
             }
 
