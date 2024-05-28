@@ -76,6 +76,22 @@ Promise.all([
         return marker;
     }
 
+    // Function to create curved line between two points
+    function createCurvedLine(startLatLng, endLatLng) {
+        var latlngs = [
+            'M', [startLatLng.lat, startLatLng.lng],
+            'C', 
+            [startLatLng.lat, (startLatLng.lng + endLatLng.lng) / 2],
+            [(startLatLng.lat + endLatLng.lat) / 2, startLatLng.lng],
+            [endLatLng.lat, endLatLng.lng]
+        ];
+        return L.curve(latlngs, {
+            color: 'red',
+            weight: 3,
+            opacity: 0.7
+        });
+    }
+
     // Function to show rental lines for a specific place
     function showRentalLinesForPlace(placeId) {
         // Clear previous filtered lines
@@ -111,18 +127,16 @@ Promise.all([
             var startPlace = places.find(place => place.id == startId);
             var endPlace = places.find(place => place.id == endId);
             if (startPlace && endPlace) {
-                var weight = 3; // Fixed line thickness for filtered lines
-                var polyline = L.polyline([
-                    [startPlace.latitude, startPlace.longitude],
-                    [endPlace.latitude, endPlace.longitude]
-                ], {
-                    color: 'red',
-                    weight: weight,
-                    opacity: 0.7
-                }).arrowheads({
+                var curvedLine = createCurvedLine(
+                    L.latLng(startPlace.latitude, startPlace.longitude),
+                    L.latLng(endPlace.latitude, endPlace.longitude)
+                );
+
+                curvedLine.arrowheads({
                     size: '5%',
-                    yawn: 40,
-                    fill: true
+                    frequency: 'end',
+                    fill: true,
+                    yawn: 40
                 });
 
                 // Sort rentals by duration
@@ -162,8 +176,8 @@ Promise.all([
                     otherPlaceMarker.addTo(filteredPlacesLayer);
                 }
 
-                polyline.bindPopup(popupContent);
-                filteredRentalLinesLayerGroup.addLayer(polyline);
+                curvedLine.bindPopup(popupContent);
+                filteredRentalLinesLayerGroup.addLayer(curvedLine);
             }
         });
 
